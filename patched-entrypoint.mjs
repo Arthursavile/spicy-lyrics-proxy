@@ -4,7 +4,7 @@ const API_HOST = "ideal-acorn-jjp959r74g7gc5q57-3000.app.github.dev";
 
 const getVersionFromHost = (host) =>
   fetch(`https://${host}/version`, {
-    headers: { 'x-target-host': 'api.spicylyrics.org' }
+    headers: { 'x-target-host': 'ideal-acorn-jjp959r74g7gc5q57-3000.app.github.dev' }
   }).then((response) => {
     if (!response.ok) throw new Error("Bad response");
     return response.text();
