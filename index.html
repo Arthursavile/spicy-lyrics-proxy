@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spicy Lyrics Portal Mirror</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            padding: 30px;
+            border-radius: 12px;
+            background: #181818;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            max-width: 400px;
+        }
+        h1 { color: #1DB954; font-size: 2rem; margin-bottom: 10px; }
+        p { color: #aaaaaa; font-size: 0.95rem; }
+        #status-display {
+            margin-top: 25px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #b3b3b3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Spicy Lyrics Hub</h1>
+        <p>Bypassing firewalls by injecting modules straight from an open CDN pipeline.</p>
+        <div id="status-display">Booting Environment...</div>
+    </div>
+
+    <script type="module">
+        const statusDiv = document.getElementById('status-display');
+
+        // Dynamically request the application bundle via jsDelivr CDN
+        import("https://jsdelivr.net")
+            .then((module) => {
+                statusDiv.innerText = "CDN Engine Active. System Mirror Connected.";
+                statusDiv.style.color = "#1DB954";
+                console.log("Successfully parsed module:", module);
+                
+                // Initialize modules if exposed
+                if (typeof module.default === 'function') {
+                    module.default();
+                } else if (typeof module.init === 'function') {
+                    module.init();
+                }
+            })
+            .catch((error) => {
+                statusDiv.innerText = "Error establishing connection stream.";
+                statusDiv.style.color = "#e91429";
+                console.error("Runtime Injection Error: ", error);
+            });
+    </script>
+</body>
+</html>
