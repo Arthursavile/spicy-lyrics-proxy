@@ -1,10 +1,9 @@
 const http = require('http');
 const https = require('https');
-
-const PORT = 3000;
+const port = 3000;
 
 const server = http.createServer((req, res) => {
-    // 1. Handle CORS Preflight and Header injection
+    // 1. Handle CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.setHeader('Access-Control-Allow-Headers', '*');
@@ -15,48 +14,52 @@ const server = http.createServer((req, res) => {
         return res.end();
     }
 
-    // 2. Parse out the target domain and the target path
-    // Format expected: /://domain.com
-    const urlParts = req.url.split('/').filter(Boolean);
-    
-    if (urlParts.length === 0) {
+    // 2. Extract full target URL from the request path
+    // Removes the leading slash to get the full "http://..." string
+    const targetUrlString = req.url.startsWith('/') ? req.url.slice(1) : req.url;
+
+    let targetUrl;
+    try {
+        targetUrl = new URL(targetUrlString);
+    } catch (err) {
         res.writeHead(400, { 'Content-Type': 'text/plain' });
-        return res.end('Error: Missing target domain in URL path.');
+        return res.end('Error: Invalid target URL. Format should be http://localhost:3000/http://example.com');
     }
 
-    // Strip out potential protocols if the client included them accidently
-    const targetDomain = urlParts[0].replace(/^https?:\/\//, '');
-    const targetPath = '/' + urlParts.slice(1).join('/');
+    // 3. Dynamically choose protocol module and port
+    const isHttps = targetUrl.protocol === 'https:';
+    const client = isHttps ? https : http;
+    const defaultPort = isHttps ? 443 : 80;
 
-    // 3. Configure the forwarding request options
+    // 4. Configure the forwarding request options
     const options = {
-        hostname: targetDomain,
-        port: 443, // Defaulting to secure HTTPS for external targets
-        path: targetPath,
+        hostname: targetUrl.hostname,
+        port: targetUrl.port || defaultPort,
+        path: targetUrl.pathname + targetUrl.search,
         method: req.method,
         headers: {
             ...req.headers,
-            host: targetDomain, // Critical to avoid SSL/Routing mismatches
+            host: targetUrl.hostname, // Avoids SSL/routing mismatches
         }
     };
 
-    // 4. Forward the incoming request to the target website
-    const proxyReq = https.request(options, (proxyRes) => {
-        // Forward target's status and headers back to client
+    // 5. Forward the request
+    const proxyReq = client.request(options, (proxyRes) => {
         res.writeHead(proxyRes.statusCode, proxyRes.headers);
         proxyRes.pipe(res);
     });
 
     // Handle network errors gracefully
     proxyReq.on('error', (err) => {
+        console.error('Proxy Error:', err.message);
         res.writeHead(502, { 'Content-Type': 'text/plain' });
-        res.end(`Proxy Error: ${err.message}`);
+        res.end(`Bad Gateway: ${err.message}`);
     });
 
-    // Pipe the client's incoming body data (for POST/PUT requests)
+    // Forward incoming request body if any
     req.pipe(proxyReq);
 });
 
-server.listen(PORT, () => {
-    console.log(`Universal CORS proxy is live on http://localhost:${PORT}`);
+server.listen(port, () => {
+    console.log(`Proxy server running at http://localhost:${port}`);
 });
